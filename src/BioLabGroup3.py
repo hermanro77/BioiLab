@@ -95,7 +95,7 @@ class Board:
         return m[self.cols.index(char2)][self.rows.index(char1)]
 
     #starts at starting_tile_value and traces back and returns a result list with coupled letters, and it's scores
-    def traceback(self, board, all_possible_alignments, startin_tile_val):
+    def traceback(self, board, all_possible_alignments, starting_tile_val):
         results = []
         scores = []
 
@@ -103,7 +103,7 @@ class Board:
             for tile in li:
 
                 #makes sure we get all the paths that starts with the tile with the highest value
-                if (len(tile.pointers) > 0 and all_possible_alignments) or (startin_tile_val == tile.value and not all_possible_alignments):
+                if (len(tile.pointers) > 0 and all_possible_alignments) or (starting_tile_val == tile.value and not all_possible_alignments):
                     scores.append(tile.value)
                     current_tile = tile
                     sequencing = [(self.string2[current_tile.x - 1], self.string1[current_tile.y - 1])]
@@ -152,16 +152,47 @@ class Board:
     def find_all_possible_optimal_alignments(self, board):
         return self.traceback(board, True, 0)
 
+def pretty(res, score):
+    s1 = ""
+    lines = ""
+    s2 = ""
+    for tup in res:
+        s1 += "  " + tup[0] + "  "
+        lines += "  |  "
+        s2 += "  " + tup[1] + "  "
+    lines += "   Score: " + str(score)
+    print("Alignment and score:")
+    print(s1)
+    print(lines)
+    print(s2)
+
+def pretty_board(board):
+    s = "BOARD:\n"
+    for i in range(len(board)):
+        if i == 0 or i == len(board):
+            s+= "+--------------------+\n"
+        else:
+            s += "|--+--+--+--+--+--+--|\n"
+        for elem in board[i]:
+            if len(str(elem)) > 1:
+                s += "|" + str(elem)
+            else:
+                s += "|" + str(elem) + " "
+        s += "|\n"
+    s += "+--------------------+"
+    print(s)
 
 
-b1 = Board("WPIWPC", "IIWPI", -4)
+b1 = Board(input("First sequence [ex. WPIWPC]: "), input("Second sequence [ex. IIWPI]: "), int(input("Gap penalty [ex. -4]: ")))
 board = b1.makeboard()
-pprint(board)
+pretty_board(board)
 
-pprint(b1.find_optimal_local_alignment(board))
+res, scores = b1.find_optimal_local_alignment(board)
+pretty(res[0], scores[0])
+print("#####################################################")
+pretty(res[1], scores[0])
+
 #pprint(b1.find_all_possible_optimal_alignments(board))
 #pprint(b1.traceback(board, False, 26))
-
-
 
 
