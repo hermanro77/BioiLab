@@ -22,7 +22,7 @@ class Board:
         self.gap_pen = gap_pen
         self.cols = ["A", "R", "N", "D", "C", "Q", "E", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V"]
         self.rows = ["A", "R", "N", "D", "C", "Q", "E", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V"]
-        self.matrix_string = "5 -2 -1 -2 -1 -1 -1 0 -2 -1 -2 -1 -1 -3 -1 1 0 -3 -2 0 " \
+        self.BLOSSUM50 = "5 -2 -1 -2 -1 -1 -1 0 -2 -1 -2 -1 -1 -3 -1 1 0 -3 -2 0 " \
                         "-2 7 -1 -2 -4 1 0 -3 0 -4 -3 3 -2 -3 -3 -1 -1 -3 -1 -3 " \
                         "-1 -1 7 2 -2 0 0 0 1 -3 -4 0 -2 -4 -2 1 0 -4 -2 -3 " \
                         "-2 -2 2 8 -4 0 2 -1 -1 -4 -4 -1 -4 -5 -1 0 -1 -5 -3 -4 " \
@@ -42,8 +42,9 @@ class Board:
                         "-3 -3 -4 -5 -5 -1 -3 -3 -3 -3 -2 -3 -1 1 -4 -4 -4 15 2 -3 " \
                         "-2 -1 -2 -3 -3 -1 -2 -3 2 -1 -1 -2 0 4 -3 -2 -2 2 8 -1 " \
                         "0 -3 -3 -4 -1 -3 -3 -4 -4 4 1 -3 1 -1 -3 -2 0 -3 -1 5"
-        self.matrix = list(map(int, self.matrix_string.split(" ")))
+        self.BLOSSUM50_MATRIX = list(map(int, self.BLOSSUM50.split(" ")))
 
+    #makes the board and calculates scores based on BLOSSUM50, input strings and gap penalty
     def makeboard(self):
         board = []
 
@@ -77,6 +78,7 @@ class Board:
             board.append(row)
         return board
 
+    #Checks if all numbers in values are negative
     def all_negative_numbers(self, values):
         b = True
         for val in values:
@@ -84,16 +86,16 @@ class Board:
                 b = False
         return b
 
-
+    #gets the score from to characters in th blossum50 matrix
     def get_score_from_matrix(self, char1, char2):
-        m = [self.matrix[i:i + len(self.rows)] for i in range(0, len(self.matrix), len(self.rows))]
+        m = [self.BLOSSUM50_MATRIX[i:i + len(self.rows)] for i in range(0, len(self.BLOSSUM50_MATRIX), len(self.rows))]
         if isinstance(char1, int) and isinstance(char2, int):
             return m[char2][char1]
 
         return m[self.cols.index(char2)][self.rows.index(char1)]
 
-
-    def traceback(self, board, all_possible_alignments, startint_tile_val):
+    #starts at starting_tile_value and traces back and returns a result list with coupled letters, and it's scores
+    def traceback(self, board, all_possible_alignments, startin_tile_val):
         results = []
         scores = []
 
@@ -101,13 +103,12 @@ class Board:
             for tile in li:
 
                 #makes sure we get all the paths that starts with the tile with the highest value
-                if (len(tile.pointers) > 0 and all_possible_alignments) or (startint_tile_val == tile.value and not all_possible_alignments):
+                if (len(tile.pointers) > 0 and all_possible_alignments) or (startin_tile_val == tile.value and not all_possible_alignments):
                     scores.append(tile.value)
                     current_tile = tile
                     sequencing = [(self.string2[current_tile.x - 1], self.string1[current_tile.y - 1])]
 
-                    #as long as the current tile in chain has pointers we coninue adding letters to sequencing and
-                    #adding to it's score
+                    #as long as the current tile in the chain has pointers we coninue adding letters to sequencing
                     while len(current_tile.pointers) > 0: #TODO: handle more than one pointer
                         letters = self.get_letters_from_pointer(current_tile, current_tile.pointers[0])
                         if letters:
@@ -115,14 +116,14 @@ class Board:
                         current_tile = board[current_tile.pointers[0][0]][current_tile.pointers[0][1]]
 
                     if len(sequencing) > 0:
-                        results.append(sequencing)
+                        results.append(list(reversed(sequencing)))
 
-        return results, scores
-
-
+        return results, list(reversed(scores))
 
 
 
+
+    #Returns a tuple of two letters based on current tile and pointer index
     def get_letters_from_pointer(self, current_tile, xy_pointer_index):
         if current_tile.x == xy_pointer_index[0]:
             return ("-", self.string2[xy_pointer_index[0] - 1])
@@ -137,7 +138,7 @@ class Board:
         else:
             return None
 
-
+    #Finds all the optimal alignments
     def find_optimal_local_alignment(self, board):
         optimal_score = 0
         for li in board:
@@ -147,13 +148,15 @@ class Board:
 
         return self.traceback(board, False, optimal_score)
 
+    #dont use
     def find_all_possible_optimal_alignments(self, board):
         return self.traceback(board, True, 0)
+
+
 
 b1 = Board("WPIWPC", "IIWPI", -4)
 board = b1.makeboard()
 pprint(board)
-
 
 pprint(b1.find_optimal_local_alignment(board))
 #pprint(b1.find_all_possible_optimal_alignments(board))
