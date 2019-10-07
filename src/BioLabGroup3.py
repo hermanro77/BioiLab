@@ -55,30 +55,40 @@ class Board:
                 if j == 0 or i == 0:
                     row.append(Tile(i, j, 0))
                 else:
+                    #Diagonal score
                     sum1 = self.get_score_from_matrix(self.string1[j-1], self.string2[i-1]) + board[i-1][j-1].value
+                    #Top score
                     sum2 = board[i-1][j].value + self.gap_pen
+                    #Left score
                     sum3 = row[j-1].value + self.gap_pen
 
                     sums = [sum1, sum2, sum3]
-                    maxes = [i for i, x in enumerate(sums) if x == max(sums)]
+                    maxes = [i for i, x in enumerate(sums) if x == max(sums)] #creates list with index of
+                                                                            #the highest sum(s). Can be multiple
+
+                    #Adds a zero Tile with no pointers if all sums are negative
                     if self.all_negative_numbers(sums):
                         row.append(Tile(i, j, 0))
+
+                    #goes through the list of all max values and appends the indexes to pointers list
                     else:
-                        li = []
-                        for ma in maxes:
-                            if ma == 0:
-                                li.append((i-1, j-1))
-                            elif ma == 1:
-                                li.append((i-1, j))
-                            elif ma == 2:
-                                li.append((i, j-1))
+                        pointers = []
+                        for max_value_index in maxes:
+                            if max_value_index == 0:
+                                pointers.append((i-1, j-1))
+                            elif max_value_index == 1:
+                                pointers.append((i-1, j))
+                            elif max_value_index == 2:
+                                pointers.append((i, j-1))
 
-                        row.append(Tile(i, j, max(sums), li))
+                        #Adds the Tile with pointers to the row in the score board
+                        row.append(Tile(i, j, max(sums), pointers))
 
+            #full row with tiles and their pointers added to baord
             board.append(row)
         return board
 
-    #Checks if all numbers in values are negative
+    #Checks if all numbers in values list are negative
     def all_negative_numbers(self, values):
         b = True
         for val in values:
@@ -86,7 +96,7 @@ class Board:
                 b = False
         return b
 
-    #gets the score from to characters in th blossum50 matrix
+    #gets the score from characters in the blossum50 matrix
     def get_score_from_matrix(self, char1, char2):
         m = [self.BLOSSUM50_MATRIX[i:i + len(self.rows)] for i in range(0, len(self.BLOSSUM50_MATRIX), len(self.rows))]
         if isinstance(char1, int) and isinstance(char2, int):
@@ -108,7 +118,7 @@ class Board:
                     current_tile = tile
                     sequencing = [(self.string2[current_tile.x - 1], self.string1[current_tile.y - 1])]
 
-                    #as long as the current tile in the chain has pointers we coninue adding letters to sequencing
+                    #as long as the current tile in the chain has pointers we coninue adding letters to the sequence
                     while len(current_tile.pointers) > 0: #TODO: handle more than one pointer
                         letters = self.get_letters_from_pointer(current_tile, current_tile.pointers[0])
                         if letters:
