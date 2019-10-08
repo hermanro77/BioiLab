@@ -101,36 +101,50 @@ class Board:
         m = [self.BLOSSUM50_MATRIX[i:i + len(self.rows)] for i in range(0, len(self.BLOSSUM50_MATRIX), len(self.rows))]
         if isinstance(char1, int) and isinstance(char2, int):
             return m[char2][char1]
-
         return m[self.cols.index(char2)][self.rows.index(char1)]
 
-    #starts at starting_tile_value and traces back and returns a result list with coupled letters, and it's scores
-    def traceback(self, board, all_possible_alignments, starting_tile_val):
-        results = []
-        scores = []
 
+    def traceback_with_depthfirst_search(self, board, starting_tile_val):
+        tile_indexes = self.find_all_tiles_with_value(board, starting_tile_val)
+        results = []
+
+        #For every starting index perform depth first search
+        for index in tile_indexes:
+            results.extend(list(self.dfs_paths(board, index[0], index[1])))
+        return results, starting_tile_val
+
+    def find_all_tiles_with_value(self, board, val):
+        indexes = []
+        for i in range(len(board)):
+            for j in range(len(board[0])):
+                if board[i][j].value == val:
+                    indexes.append((i, j))
+        return indexes
+
+    #does dfs on board with tiles from index (x, y) and returns list of lists with paths from tile at (x, y) to a tile with
+    #value 0
+    def dfs_paths(self, board, x, y):
+        start_node = board[x][y]
+        stack = [(start_node, [start_node])]
+        while stack:
+            (tile, path) = stack.pop()
+            for index in tile.pointers:
+                next = board[index[0]][index[1]]
+                if next.value == 0:
+                    yield path
+                else:
+                    stack.append((next, path + [next]))
+
+
+    #Finds the optimal alignments
+    def find_optimal_local_alignments(self, board):
+        optimal_score = 0
         for li in board:
             for tile in li:
+                if tile.value > optimal_score:
+                    optimal_score = tile.value
 
-                #makes sure we get all the paths that starts with the tile with the highest value
-                if (len(tile.pointers) > 0 and all_possible_alignments) or (starting_tile_val == tile.value and not all_possible_alignments):
-                    scores.append(tile.value)
-                    current_tile = tile
-                    sequencing = [(self.string2[current_tile.x - 1], self.string1[current_tile.y - 1])]
-
-                    #as long as the current tile in the chain has pointers we coninue adding letters to the sequence
-                    while len(current_tile.pointers) > 0: #TODO: handle more than one pointer
-                        letters = self.get_letters_from_pointer(current_tile, current_tile.pointers[0])
-                        if letters:
-                            sequencing.append(letters)
-                        current_tile = board[current_tile.pointers[0][0]][current_tile.pointers[0][1]]
-
-                    if len(sequencing) > 0:
-                        results.append(list(reversed(sequencing)))
-
-        return results, list(reversed(scores))
-
-
+        return self.traceback_with_depthfirst_search(board, optimal_score)
 
 
     #Returns a tuple of two letters based on current tile and pointer index
@@ -148,21 +162,14 @@ class Board:
         else:
             return None
 
-    #Finds all the optimal alignments
-    def find_optimal_local_alignment(self, board):
-        optimal_score = 0
-        for li in board:
-            for tile in li:
-                if tile.value > optimal_score:
-                    optimal_score = tile.value
+    def create_sequence_from_tile_path(self, path):
+        seq = [(self.string2[path[0].x - 1], self.string1[path[0].y - 1])]
+        for i in range(len(path)-1):
+            seq.append(self.get_letters_from_pointer(path[i], (path[i+1].x, path[i+1].y)))
+        return seq
 
-        return self.traceback(board, False, optimal_score)
 
-    #dont use
-    def find_all_possible_optimal_alignments(self, board):
-        return self.traceback(board, True, 0)
-
-def pretty(res, score):
+def pretty_seq(res, score):
     s1 = ""
     lines = ""
     s2 = ""
@@ -196,13 +203,8 @@ def pretty_board(board):
 b1 = Board(input("First sequence [ex. WPIWPC]: "), input("Second sequence [ex. IIWPI]: "), int(input("Gap penalty [ex. -4]: ")))
 board = b1.makeboard()
 pretty_board(board)
-
-res, scores = b1.find_optimal_local_alignment(board)
-pretty(res[0], scores[0])
-print("#####################################################")
-pretty(res[1], scores[0])
-
-#pprint(b1.find_all_possible_optimal_alignments(board))
-#pprint(b1.traceback(board, False, 26))
+optimal_paths, highest_score = b1.find_optimal_local_alignments(board)
+for path in optimal_paths:
+    pretty_seq(b1.create_sequence_from_tile_path(path), highest_score)
 
 
